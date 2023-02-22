@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import "./messages/BurnMessage.sol";
-import "./messages/Message.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "./BurnMessage.sol";
+import "./Message.sol";
+import "openzeppelin-contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 contract Transporter {
     uint32 public immutable localDomain;
@@ -89,6 +89,8 @@ contract Transporter {
         );
 
         emit MessageSent(message);
+
+        return nonce;
 
     }
     
