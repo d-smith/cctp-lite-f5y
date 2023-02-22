@@ -18,6 +18,11 @@ contract TransportTest is Test {
     address internal alice;
     address internal bob;
 
+    uint32 immutable localDomain  = 1;
+    uint32 immutable remoteDomain = 2;
+
+    event MessageSent(bytes message);
+
     function setUpAddresses() internal {
         owner = address(this);
         vm.label(owner, "Owner");
@@ -34,12 +39,12 @@ contract TransportTest is Test {
 
     function setUp() public {
         setUpAddresses();
-        transporter = new Transporter(1);
+        transporter = new Transporter(localDomain);
         myToken = new MyToken();
     }
 
     function testDomainSet() public {
-        assertEqUint(1, transporter.localDomain());
+        assertEqUint(localDomain, transporter.localDomain());
     } 
 
     function testMyTokenOwner() public {
@@ -49,6 +54,33 @@ contract TransportTest is Test {
     function testTotalSupplyOnInstall() public {
         assertEq(myToken.totalSupply(), myToken.balanceOf(owner));
     }
+
+    function formSentMessage(
+        uint256 amount,
+        address recipient,
+        address sender
+    ) internal view returns (bytes memory) {
+        
+        bytes memory burnMessage = BurnMessage._formatMessage(
+            transporter.messageBodyVersion(),
+            Message.addressToBytes32(address(myToken)),
+            Message.addressToBytes32(recipient),
+            amount,
+            Message.addressToBytes32(address(sender))
+        );
+
+        bytes memory message = Message._formatMessage(
+            transporter.messageBodyVersion(),
+            localDomain,
+            remoteDomain,
+            0, // Nonce value at test time
+            Message.addressToBytes32(sender),
+            Message.addressToBytes32(recipient),
+            burnMessage
+        );
+
+        return message;
+    } 
 
     function testBurnForDeposit() public {
         myToken.transfer(alice, 50);
@@ -61,10 +93,16 @@ contract TransportTest is Test {
         assertEq(0, myToken.allowance(bob, address(transporter)));
 
         bytes32 b32addr = Message.addressToBytes32(bob);
+        
+        bytes memory message  = formSentMessage(6,bob, alice);
+        vm.expectEmit(true,true,true,true);
+        emit MessageSent(message);
+
+
     
         vm.prank(alice);
         transporter.depositForBurn(
-            6, 2, b32addr, address(myToken)
+            6, remoteDomain, b32addr, address(myToken)
         );
 
         assertEq(44, myToken.balanceOf(address(alice)));
