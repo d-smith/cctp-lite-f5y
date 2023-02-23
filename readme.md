@@ -12,10 +12,10 @@ For exercising the CLI I ran a ganache node bootstrapped with a consistent test 
 .castenv environment file.
 
 ```
-cast call "0xa7F08a6F40a00f4ba0eE5700F730421C5810f848" "totalSupply()(uint256)"  --rpc-url  http://127.0.0.1:8545
+cast call $MYTOKENADDR "totalSupply()(uint256)"  --rpc-url  http://127.0.0.1:8545
 
 # Transfer some tokens to account 1
-cast send "0xa7F08a6F40a00f4ba0eE5700F730421C5810f848" "transfer(address,uint256)" --private-key $DEPLOYER 0x9949f7e672a568bB3EBEB777D5e8D1c1107e96E5 50
+cast send $MYTOKENADDR "transfer(address,uint256)" --private-key $DEPLOYER $ACCT1 50
 
 
 cast call $MYTOKENADDR "balanceOf(address)" $ACCT1
