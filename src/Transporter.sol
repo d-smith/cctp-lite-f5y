@@ -7,11 +7,13 @@ import "openzeppelin-contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 contract Transporter {
     uint32 public immutable localDomain;
+    uint32 public immutable remoteDomain;
     uint32 public immutable messageBodyVersion;
     uint64 public nextAvailableNonce;
 
-    constructor(uint32 _localDomain) {
+    constructor(uint32 _localDomain, uint32 _remoteDomain) {
         localDomain = _localDomain;
+        remoteDomain = _remoteDomain;
         messageBodyVersion = 1;
     }
 

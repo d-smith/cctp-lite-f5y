@@ -8,6 +8,7 @@ import "../src/Token.sol";
 contract DeployScript is Script {
     uint256 private deployerPrivateKey;
     uint32 private localDomain;
+    uint32 private remoteDomain;
     address private transporterAddress;
     address private myTokenAddress;
 
@@ -20,11 +21,15 @@ contract DeployScript is Script {
         localDomain = uint32(
             vm.envUint("LOCAL_DOMAIN")
         );
+
+        remoteDomain = uint32(
+            vm.envUint("REMOTE_DOMAIN")
+        );
     }
 
     function run() public {
         vm.startBroadcast(deployerPrivateKey);
-        Transporter transporter = new Transporter(localDomain);
+        Transporter transporter = new Transporter(localDomain, remoteDomain);
         transporterAddress = address(transporter);
 
         MyToken myToken = new MyToken();

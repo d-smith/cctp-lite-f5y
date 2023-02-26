@@ -39,7 +39,7 @@ contract TransportTest is Test {
 
     function setUp() public {
         setUpAddresses();
-        transporter = new Transporter(localDomain);
+        transporter = new Transporter(localDomain, remoteDomain);
         myToken = new MyToken();
     }
 
