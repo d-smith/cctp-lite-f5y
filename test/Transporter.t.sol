@@ -9,6 +9,7 @@ import {Utils} from "./utils/Utils.sol";
 
 contract TransportTest is Test {
     Transporter public transporter;
+    Transporter public remoteTransporter;
     MyToken public myToken;
 
     Utils internal utils;
@@ -21,6 +22,7 @@ contract TransportTest is Test {
     uint32 immutable localDomain  = 1;
     uint32 immutable remoteDomain = 2;
     address immutable remoteAttestor = address(0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac);
+    address immutable localSigner = address(0x73dA1eD554De26C467d97ADE090af6d52851745E);
 
     event MessageSent(bytes message);
 
@@ -41,6 +43,7 @@ contract TransportTest is Test {
     function setUp() public {
         setUpAddresses();
         transporter = new Transporter(localDomain, remoteDomain, remoteAttestor);
+        remoteTransporter = new Transporter(remoteDomain,localDomain, localSigner);
         myToken = new MyToken();
     }
 
@@ -107,6 +110,22 @@ contract TransportTest is Test {
         );
 
         assertEq(44, myToken.balanceOf(address(alice)));
+    }
+
+    function testReceiveMessage() public {
+        bytes memory message  = formSentMessage(6,bob, alice);
+        bytes32 digest = keccak256(message);
+
+
+        // From ganache test environment signer address and private key
+        // 0x73dA1eD554De26C467d97ADE090af6d52851745E
+        // 0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b
+        
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest);
+        bytes memory enc = abi.encodePacked(r,s,v);
+        
+        bool received = remoteTransporter.receiveMessage(message, enc);
+        assertTrue(received);
     }
 
 }
