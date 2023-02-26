@@ -20,6 +20,7 @@ contract TransportTest is Test {
 
     uint32 immutable localDomain  = 1;
     uint32 immutable remoteDomain = 2;
+    address immutable remoteAttestor = address(0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac);
 
     event MessageSent(bytes message);
 
@@ -39,7 +40,7 @@ contract TransportTest is Test {
 
     function setUp() public {
         setUpAddresses();
-        transporter = new Transporter(localDomain, remoteDomain);
+        transporter = new Transporter(localDomain, remoteDomain, remoteAttestor);
         myToken = new MyToken();
     }
 

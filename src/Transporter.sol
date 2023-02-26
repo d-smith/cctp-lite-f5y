@@ -10,10 +10,12 @@ contract Transporter {
     uint32 public immutable remoteDomain;
     uint32 public immutable messageBodyVersion;
     uint64 public nextAvailableNonce;
+    address public immutable remoteAttestor;
 
-    constructor(uint32 _localDomain, uint32 _remoteDomain) {
+    constructor(uint32 _localDomain, uint32 _remoteDomain, address _remoteAttestor) {
         localDomain = _localDomain;
         remoteDomain = _remoteDomain;
+        remoteAttestor = _remoteAttestor;
         messageBodyVersion = 1;
     }
 

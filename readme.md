@@ -28,3 +28,8 @@ cast call 0xdb98a5bfba239000213813b2615b8a96e950a79b "addressToBytes32(address)"
 cast send $TRANSPORTER "depositForBurn(uint256,uint32,bytes32,address)" --private-key $ADDR1PK  6 2 $ACCT1BYTES32 $MYTOKENADDR
 ```
 
+## Misc
+
+Prefunded moonbeam dev accounts - see [here](https://docs.moonbeam.network/builders/get-started/networks/moonbeam-dev/#pre-funded-development-accounts)
+
+We can use Gerald as the deployer, and Alith as the attestor

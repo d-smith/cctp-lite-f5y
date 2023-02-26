@@ -11,6 +11,7 @@ contract DeployScript is Script {
     uint32 private remoteDomain;
     address private transporterAddress;
     address private myTokenAddress;
+    address private remoteAttestor;
 
 
     function setUp() public {
@@ -25,11 +26,13 @@ contract DeployScript is Script {
         remoteDomain = uint32(
             vm.envUint("REMOTE_DOMAIN")
         );
+
+        remoteAttestor = vm.envAddress("REMOTE_ATTESTOR_ADDRESS");
     }
 
     function run() public {
         vm.startBroadcast(deployerPrivateKey);
-        Transporter transporter = new Transporter(localDomain, remoteDomain);
+        Transporter transporter = new Transporter(localDomain, remoteDomain, remoteAttestor);
         transporterAddress = address(transporter);
 
         MyToken myToken = new MyToken();
