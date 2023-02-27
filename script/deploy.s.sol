@@ -32,11 +32,13 @@ contract DeployScript is Script {
 
     function run() public {
         vm.startBroadcast(deployerPrivateKey);
-        Transporter transporter = new Transporter(localDomain, remoteDomain, remoteAttestor);
-        transporterAddress = address(transporter);
 
         MyToken myToken = new MyToken();
         myTokenAddress = address(myToken);
+
+        Transporter transporter = new Transporter(localDomain, remoteDomain, remoteAttestor, myTokenAddress);
+        transporterAddress = address(transporter);
+
         vm.stopBroadcast();
     }
 

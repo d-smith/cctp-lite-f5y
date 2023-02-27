@@ -11,6 +11,7 @@ contract TransportTest is Test {
     Transporter public transporter;
     Transporter public remoteTransporter;
     MyToken public myToken;
+    MyToken public remoteToken;
 
     Utils internal utils;
 
@@ -42,9 +43,11 @@ contract TransportTest is Test {
 
     function setUp() public {
         setUpAddresses();
-        transporter = new Transporter(localDomain, remoteDomain, remoteAttestor);
-        remoteTransporter = new Transporter(remoteDomain,localDomain, localSigner);
         myToken = new MyToken();
+        remoteToken = new MyToken();
+        transporter = new Transporter(localDomain, remoteDomain, remoteAttestor, address(myToken));
+        remoteTransporter = new Transporter(remoteDomain,localDomain, localSigner, address(remoteToken));
+        remoteToken.addCCTPMinter(address(remoteTransporter));
     }
 
     function testDomainSet() public {
@@ -102,7 +105,7 @@ contract TransportTest is Test {
         vm.expectEmit(true,true,true,true);
         emit MessageSent(message);
 
-
+        uint256 startingSupply = myToken.totalSupply();
     
         vm.prank(alice);
         transporter.depositForBurn(
@@ -110,12 +113,14 @@ contract TransportTest is Test {
         );
 
         assertEq(44, myToken.balanceOf(address(alice)));
+        assertEq(startingSupply - 6, myToken.totalSupply());
     }
 
     function testReceiveMessage() public {
         bytes memory message  = formSentMessage(6,bob, alice);
         bytes32 digest = keccak256(message);
 
+        uint256 startSupply = remoteToken.totalSupply();
 
         // From ganache test environment signer address and private key
         // 0x73dA1eD554De26C467d97ADE090af6d52851745E
@@ -123,9 +128,16 @@ contract TransportTest is Test {
         
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest);
         bytes memory enc = abi.encodePacked(r,s,v);
+
+        uint256 remoteBalance = remoteToken.balanceOf(bob);
+        assertEq(0, remoteBalance);
         
         bool received = remoteTransporter.receiveMessage(message, enc);
         assertTrue(received);
+
+        remoteBalance = remoteToken.balanceOf(bob);
+        assertEq(6, remoteBalance);
+        assertEq(startSupply + 6, remoteToken.totalSupply());
     }
 
 }

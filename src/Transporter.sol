@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import "./BurnMessage.sol";
 import "./Message.sol";
+import "./IDelegatedMinter.sol";
 import "openzeppelin-contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 
@@ -12,6 +13,7 @@ contract Transporter {
     uint32 public immutable messageBodyVersion;
     uint64 public nextAvailableNonce;
     address public immutable remoteAttestor;
+    address private immutable minter;
 
     event MessageSent(bytes message);
 
@@ -27,6 +29,7 @@ contract Transporter {
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
     using Message for bytes29;
+    using BurnMessage for bytes29;
 
     struct XmitRec {
         address sender;
@@ -35,10 +38,16 @@ contract Transporter {
 
     mapping(uint64 => XmitRec) private processedSends;
 
-    constructor(uint32 _localDomain, uint32 _remoteDomain, address _remoteAttestor) {
+    constructor(
+        uint32 _localDomain, 
+        uint32 _remoteDomain, 
+        address _remoteAttestor,
+        address _minter
+    ) {
         localDomain = _localDomain;
         remoteDomain = _remoteDomain;
         remoteAttestor = _remoteAttestor;
+        minter = _minter;
         messageBodyVersion = 1;
     }
 
@@ -50,11 +59,10 @@ contract Transporter {
     ) external returns (uint64) {
         require(amount > 0);
         require(mintRecipient != bytes32(0));
-        require(burnToken != address(0));
+        require(burnToken == minter);
 
         // Burn the token
-        ERC20Burnable burnableToken = ERC20Burnable(burnToken);
-        burnableToken.burnFrom(msg.sender, amount);
+        ERC20Burnable(minter).burnFrom(msg.sender, amount);
 
         // Form the message
         bytes memory burnMessage = BurnMessage._formatMessage(
@@ -165,8 +173,18 @@ contract Transporter {
 
         // Now do the mint
 
-       
+        bytes29 _burnMsg = Message._messageBody(_msg);
+        uint256 amount = BurnMessage._getAmount(_burnMsg);
+        require(amount > 0);
 
+        address burnMsgRecipient = Message.bytes32ToAddress(
+            BurnMessage._getMintRecipient(_burnMsg)
+        );
+        require(burnMsgRecipient != address(0));
+
+        require(burnMsgRecipient == recipient);
+
+        IDelegatedMinter(minter).delegateMint(recipient, amount);
 
     }
 }
