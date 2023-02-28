@@ -41,6 +41,10 @@ contract Transporter {
     error ZeroAmount();
     error ZeroAddressRecipient();
     error UnsupportedToken();
+    error UnrecognizedAttestation();
+    error UnsupportedBodyVersion();
+    error UnsupportedSourceDomain();
+    error UnsupportedDestinationDomain();
 
     constructor(
         uint32 _localDomain, 
@@ -144,13 +148,13 @@ contract Transporter {
 
         // For this simplified version we assume one signature
         address signerAddress = ECDSA.recover(digest, attestation);
-        require(signerAddress == remoteAttestor);
+        if(signerAddress != remoteAttestor) revert UnrecognizedAttestation();
 
         //TODO - full message verification
         bytes29 _msg = message.ref(0);
-        require(Message._version(_msg) == messageBodyVersion);
-        require(Message._sourceDomain(_msg) == remoteDomain);
-        require(Message._destinationDomain(_msg) == localDomain);
+        if(Message._version(_msg) != messageBodyVersion) revert UnsupportedBodyVersion();
+        if(Message._sourceDomain(_msg) != remoteDomain) revert UnsupportedSourceDomain();
+        if(Message._destinationDomain(_msg) != localDomain) revert UnsupportedDestinationDomain();
 
         uint64 sendNonce = Message._nonce(_msg);
         

@@ -65,11 +65,14 @@ contract TransportTest is Test {
     function formSentMessage(
         uint256 amount,
         address recipient,
-        address sender
+        address sender,
+        uint32 messageBodyVersion,
+        uint32 sourceDomain,
+        uint32 destinationDomain
     ) internal view returns (bytes memory) {
         
         bytes memory burnMessage = BurnMessage._formatMessage(
-            transporter.messageBodyVersion(),
+            messageBodyVersion,
             Message.addressToBytes32(address(myToken)),
             Message.addressToBytes32(recipient),
             amount,
@@ -77,9 +80,9 @@ contract TransportTest is Test {
         );
 
         bytes memory message = Message._formatMessage(
-            transporter.messageBodyVersion(),
-            localDomain,
-            remoteDomain,
+            messageBodyVersion,
+            sourceDomain,
+            destinationDomain,
             0, // Nonce value at test time
             Message.addressToBytes32(sender),
             Message.addressToBytes32(recipient),
@@ -132,7 +135,9 @@ contract TransportTest is Test {
 
         bytes32 b32addr = Message.addressToBytes32(bob);
         
-        bytes memory message  = formSentMessage(6,bob, alice);
+        bytes memory message  = 
+            formSentMessage(6,bob, alice, transporter.messageBodyVersion(),
+                localDomain, remoteDomain);
         vm.expectEmit(true,true,true,true);
         emit MessageSent(message);
 
@@ -147,8 +152,62 @@ contract TransportTest is Test {
         assertEq(startingSupply - 6, myToken.totalSupply());
     }
 
+    function testAttestorSigValidation() public {
+        address foo = vm.addr(1);
+        bytes memory message  = formSentMessage(6,bob, foo, 
+            transporter.messageBodyVersion(), localDomain, remoteDomain);
+        bytes32 digest = keccak256(message);
+        
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, digest);
+        bytes memory enc = abi.encodePacked(r,s,v);
+
+        vm.expectRevert(Transporter.UnrecognizedAttestation.selector);
+        remoteTransporter.receiveMessage(message, enc);
+
+    }
+
+    function testMessageVersionCheck() public {
+        bytes memory message  = formSentMessage(6,bob, alice, 666, localDomain, remoteDomain);
+        bytes32 digest = keccak256(message);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest);
+        bytes memory enc = abi.encodePacked(r,s,v);
+
+        vm.expectRevert(Transporter.UnsupportedBodyVersion.selector);
+        remoteTransporter.receiveMessage(message, enc);
+
+    }
+
+    function testSourceDomainCheck() public {
+        bytes memory message  = formSentMessage(6,bob, alice, 
+            transporter.messageBodyVersion(), 12, remoteDomain);
+        bytes32 digest = keccak256(message);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest);
+        bytes memory enc = abi.encodePacked(r,s,v);
+
+        vm.expectRevert(Transporter.UnsupportedSourceDomain.selector);
+        remoteTransporter.receiveMessage(message, enc);
+
+    }
+
+    function testDestinationDomainCheck() public {
+        bytes memory message  = formSentMessage(6,bob, alice, 
+            transporter.messageBodyVersion(), localDomain, 12);
+        bytes32 digest = keccak256(message);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest);
+        bytes memory enc = abi.encodePacked(r,s,v);
+
+        vm.expectRevert(Transporter.UnsupportedDestinationDomain.selector);
+        remoteTransporter.receiveMessage(message, enc);
+
+    }
+
     function testReceiveMessage() public {
-        bytes memory message  = formSentMessage(6,bob, alice);
+        bytes memory message  = formSentMessage(6,bob, alice,
+            transporter.messageBodyVersion(), localDomain, remoteDomain);
         bytes32 digest = keccak256(message);
 
         uint256 startSupply = remoteToken.totalSupply();
