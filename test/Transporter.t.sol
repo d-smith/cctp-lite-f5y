@@ -228,6 +228,10 @@ contract TransportTest is Test {
         remoteBalance = remoteToken.balanceOf(bob);
         assertEq(6, remoteBalance);
         assertEq(startSupply + 6, remoteToken.totalSupply());
+
+        vm.expectRevert(Transporter.RequestPreviouslyProcessed.selector);
+        remoteTransporter.receiveMessage(message, enc);
+
     }
 
 }

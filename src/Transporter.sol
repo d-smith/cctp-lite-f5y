@@ -45,6 +45,7 @@ contract Transporter {
     error UnsupportedBodyVersion();
     error UnsupportedSourceDomain();
     error UnsupportedDestinationDomain();
+    error RequestPreviouslyProcessed();
 
     constructor(
         uint32 _localDomain, 
@@ -156,12 +157,14 @@ contract Transporter {
         if(Message._sourceDomain(_msg) != remoteDomain) revert UnsupportedSourceDomain();
         if(Message._destinationDomain(_msg) != localDomain) revert UnsupportedDestinationDomain();
 
+        // Extract the nonce and see if we have processed this before
         uint64 sendNonce = Message._nonce(_msg);
         
         XmitRec memory xmit = processedSends[sendNonce];
-        require(xmit.recipient == address(0));
+        if(xmit.recipient != address(0)) revert RequestPreviouslyProcessed();
 
-        // Add the nonce for the send
+        // Extract sender and recipient, include those as the context assocaited
+        // with the request nonce being processed.
         
         address sender = Message.bytes32ToAddress(
             Message._sender(_msg)
@@ -183,13 +186,13 @@ contract Transporter {
 
         bytes29 _burnMsg = Message._messageBody(_msg);
         uint256 amount = BurnMessage._getAmount(_burnMsg);
-        require(amount > 0);
+        if(amount <= 0) revert ZeroAmount();
 
         address burnMsgRecipient = Message.bytes32ToAddress(
             BurnMessage._getMintRecipient(_burnMsg)
         );
+        
         require(burnMsgRecipient != address(0));
-
         require(burnMsgRecipient == recipient);
 
         IDelegatedMinter(minter).delegateMint(recipient, amount);
