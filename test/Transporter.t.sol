@@ -89,6 +89,37 @@ contract TransportTest is Test {
         return message;
     } 
 
+    function testBurnAmountNotZero() public {
+        bytes32 b32addr = Message.addressToBytes32(bob);
+
+        vm.prank(alice);
+        vm.expectRevert(Transporter.ZeroAmount.selector);
+        transporter.depositForBurn(
+            0, remoteDomain, b32addr, address(myToken)
+        );
+    }
+
+    function testRecipientAddressNotZero() public {
+        
+
+        vm.prank(alice);
+        vm.expectRevert(Transporter.ZeroAddressRecipient.selector);
+        transporter.depositForBurn(
+            5, remoteDomain, bytes32(0), address(myToken)
+        );
+    }
+
+    function testUnsupportedToken() public {
+        bytes32 b32addr = Message.addressToBytes32(bob);
+
+        vm.prank(alice);
+        vm.expectRevert(Transporter.UnsupportedToken.selector);
+        transporter.depositForBurn(
+            5, remoteDomain, b32addr, address(0)
+        );
+    }
+
+
     function testBurnForDeposit() public {
         myToken.transfer(alice, 50);
         

@@ -38,6 +38,10 @@ contract Transporter {
 
     mapping(uint64 => XmitRec) private processedSends;
 
+    error ZeroAmount();
+    error ZeroAddressRecipient();
+    error UnsupportedToken();
+
     constructor(
         uint32 _localDomain, 
         uint32 _remoteDomain, 
@@ -57,9 +61,9 @@ contract Transporter {
         bytes32 mintRecipient,
         address burnToken
     ) external returns (uint64) {
-        require(amount > 0);
-        require(mintRecipient != bytes32(0));
-        require(burnToken == minter);
+        if(amount <= 0) revert ZeroAmount();
+        if(mintRecipient == bytes32(0)) revert ZeroAddressRecipient();
+        if(burnToken != minter) revert UnsupportedToken();
 
         // Burn the token
         ERC20Burnable(minter).burnFrom(msg.sender, amount);

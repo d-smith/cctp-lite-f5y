@@ -4,8 +4,18 @@ Simplified version of CCTP as an illustration of the rough workings of the proto
 
 ## Deploy
 
-forge script script/deploy.s.sol:DeployScript --broadcast --rpc-url http://127.0.0.1:8545
+To local eth:
 
+```
+forge script script/deploy.s.sol:DeployScript --broadcast --rpc-url http://127.0.0.1:8545
+```
+
+To local moonbeam
+
+```
+details soon...
+
+```
 ## CLI Interactions
 
 For exercising the CLI I ran a ganache node bootstrapped with a consistent test seed phrase to allow me to rely on specific address and key values captured in the 
