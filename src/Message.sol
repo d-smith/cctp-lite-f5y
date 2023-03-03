@@ -91,6 +91,10 @@ library Message {
         return bytes32(uint256(uint160(addr)));
     }
 
+    function addressToAddress(address addr) external pure returns (address) {
+        return addr;
+    }
+
     /**
      * @notice converts bytes32 to address (alignment preserving cast.)
      * @dev Warning: it is possible to have different input values _buf map to the same address.
