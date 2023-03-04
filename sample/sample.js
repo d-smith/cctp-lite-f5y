@@ -33,32 +33,44 @@ const main = async() => {
     //web3.eth.accounts.wallet.add(moonbeamSigner);
 
     // Contract addresses
-    const ethTransporterAddress = "0xa7F08a6F40a00f4ba0eE5700F730421C5810f848";
-    const ethTokenAddress = "0xC0a4b9e04fB55B1b498c634FAEeb7C8dD5895b53";
+    const ethTransporterAddress = "0x938b27Abd4D9548fc0fD573371F489E39b5085Ea";
+    const ethTokenAddress = "0xccFfF869b36A8a166194Bb36727De7A10E58278f";
 
     const ethTokenContract =  new web3.eth.Contract(myTokenAbi, ethTokenAddress, {from: ownerSigner.address});
     const transporterContract = new web3.eth.Contract(transporterAbi, ethTransporterAddress,{from: ownerSigner.address} );
     const messageContract = new web3.eth.Contract(messageAbi, ethTransporterAddress, {from: ownerSigner.address});
 
     // STEP 0: Fund caller
+    console.log("fund the caller");
     const transferTxGas = await ethTokenContract.methods.transfer(ethSigner.address, 50).estimateGas();
     const transferTx = await ethTokenContract.methods.transfer(ethSigner.address, 50, ).send({gas:transferTxGas});
     const transferTxReceipt = await waitForTransaction(web3, transferTx.transactionHash);
-    console.log('transferTxReceipt: ', transferTxReceipt)
 
     // STEP 1: Approve transporter contract to withdraw from our active eth address
-    const approveTxGas = await ethTokenContract.methods.approve(ethTransporterAddress, 6).estimateGas()
-    const approveTx = await ethTokenContract.methods.approve(ethTransporterAddress, 6).send({from: ethSigner.address, gas: approveTxGas})
+    console.log("approve transporter burn amount");
+    const approveTxGas = await ethTokenContract.methods.approve(ethTransporterAddress, 10).estimateGas()
+    const approveTx = await ethTokenContract.methods.approve(ethTransporterAddress, 10).send({from: ethSigner.address, gas: approveTxGas})
     const approveTxReceipt = await waitForTransaction(web3, approveTx.transactionHash);
-    console.log('ApproveTxReceipt: ', approveTxReceipt)
+
+    const allowance = await ethTokenContract.methods.allowance(ethSigner.address, ethTransporterAddress).call();
+    console.log(allowance);
 
     // STEP 2: Burn MyToken
-    
-
+    console.log("deposit for born");
     const burnTxGas = await transporterContract.methods.depositForBurn(6, REMOTE_DOMAIN, process.env.RECIPIENT_ADDRESS_BYTES32, ethTokenAddress).estimateGas();
     const burnTx = await transporterContract.methods.depositForBurn(6, REMOTE_DOMAIN, process.env.RECIPIENT_ADDRESS_BYTES32, ethTokenAddress).send({gas: burnTxGas});
     const burnTxReceipt = await waitForTransaction(web3, burnTx.transactionHash);
-    console.log('BurnTxReceipt: ', burnTxReceipt)
+
+    // STEP 3: Grab the message from the event logs
+    console.log("get message from log");
+    const transactionReceipt = await web3.eth.getTransactionReceipt(burnTx.transactionHash);
+    const eventTopic = web3.utils.keccak256('MessageSent(bytes)')
+    const log = transactionReceipt.logs.find((l) => l.topics[0] === eventTopic)
+    const messageBytes = web3.eth.abi.decodeParameters(['bytes'], log.data)[0]
+    const messageHash = web3.utils.keccak256(messageBytes);
+
+    console.log(`MessageBytes: ${messageBytes}`)
+    console.log(`MessageHash: ${messageHash}`)
 }
 
 main();
