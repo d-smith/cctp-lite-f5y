@@ -25,11 +25,17 @@ const main = async () => {
     const ownerSigner = web3.eth.accounts.privateKeyToAccount(process.env.DEPLOYER_KEY);
     web3.eth.accounts.wallet.add(ownerSigner);
 
+    const mbSigner = web3.eth.accounts.privateKeyToAccount(process.env.MB_PRIVATE_KEY);
+    web3.eth.accounts.wallet.add(mbSigner);
+
     const ethTokenAddress = "0xccFfF869b36A8a166194Bb36727De7A10E58278f";
     const ethTokenContract =  new web3.eth.Contract(myTokenAbi, ethTokenAddress, {from: ownerSigner.address});
 
     const ethTransporterAddress = "0x938b27Abd4D9548fc0fD573371F489E39b5085Ea";
     const transporterContract = new web3.eth.Contract(transporterAbi, ethTransporterAddress,{from: ethSigner.address} );
+
+    const mbTransporterAddress = "0x42e2EE7Ba8975c473157634Ac2AF4098190fc741";
+    const mbTransporterContract = new web3.eth.Contract(transporterAbi, ethTransporterAddress,{from: mbSigner.address} );
 
     const initialBalance = await ethTokenContract.methods.balanceOf(ethSigner.address).call();
     console.log(`initial balance of account 1 ${initialBalance}`);
@@ -55,11 +61,40 @@ const main = async () => {
     const updatedAuth = await ethTokenContract.methods.allowance(ethSigner.address, ethTransporterAddress).call();
     console.log(updatedAuth);
 
-    console.log("deposit for born");
+    console.log("deposit for burn");
     const burnTxGas = await transporterContract.methods.depositForBurn(6, REMOTE_DOMAIN, process.env.RECIPIENT_ADDRESS_BYTES32, ethTokenAddress).estimateGas();
     const burnTx = await transporterContract.methods.depositForBurn(6, REMOTE_DOMAIN, process.env.RECIPIENT_ADDRESS_BYTES32, ethTokenAddress).send({gas: burnTxGas});
     const burnTxReceipt = await waitForTransaction(web3, burnTx.transactionHash);
-    console.log(burnTxReceipt);
+    //console.log(burnTxReceipt);
+
+    console.log("get message from log");
+    const transactionReceipt = await web3.eth.getTransactionReceipt(burnTx.transactionHash);
+    const eventTopic = web3.utils.keccak256('MessageSent(bytes)')
+    const log = transactionReceipt.logs.find((l) => l.topics[0] === eventTopic)
+    const messageBytes = web3.eth.abi.decodeParameters(['bytes'], log.data)[0]
+    const messageHash = web3.utils.keccak256(messageBytes);
+
+    console.log(`MessageBytes: ${messageBytes}`)
+    console.log(`MessageHash: ${messageHash}`)
+
+    let attestationResponse = {};
+
+    while(attestationResponse.attestation == undefined ||attestationResponse.attestation == '' ) {
+        console.log(`${process.env.ENDPOINT}/${messageHash}`)
+        const response = await fetch(`${process.env.ENDPOINT}/${messageHash}`);
+        attestationResponse = await response.json()
+        console.log(attestationResponse);
+        await new Promise(r => setTimeout(r, 2000));
+    }
+
+    const attestationSignature = attestationResponse.attestation;
+    console.log(`Signature: ${attestationSignature}`)
+
+    web3.setProvider(process.env.MOONBEAM_LOCAL_RPC); // Connect web3 to AVAX testnet
+    const receiveTxGas = await mbTransporterContract.methods.receiveMessage(messageBytes, attestationSignature).estimateGas();
+    const receiveTx = await mbTransporterContract.methods.receiveMessage(messageBytes, attestationSignature).send({gas: receiveTxGas});
+    const receiveTxReceipt = await waitForTransaction(web3, receiveTx.transactionHash);
+    console.log('ReceiveTxReceipt: ', receiveTxReceipt)
 }
 
 main();
