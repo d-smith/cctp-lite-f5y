@@ -15,7 +15,13 @@ const waitForTransaction = async (web3, txHash) => {
         await new Promise(r => setTimeout(r, 4000));
     }
     return transactionReceipt;
-}
+};
+
+const isDeployed = async (web3, name, addr) => {
+    let x = await web3.eth.getCode(addr);
+    console.log(`${name}:`)
+    console.log(x == '0x' ? ' not deployed' : ' deployed');
+};
 
 const main = async () => {
     const web3 = new Web3(process.env.MOONBEAM_LOCAL_RPC);
@@ -25,11 +31,13 @@ const main = async () => {
         .transactions.filter(t => t.contractName == "MyToken")
         .map(t => t.contractAddress)[0];
 
+    await isDeployed(web3, 'token contract', mbTokenAddress);
+
     const mbTransporterAddress = mbContractDeployCtx
         .transactions.filter(t => t.contractName == "Transporter")
         .map(t => t.contractAddress)[0];
 
-    console.log(myTokenAbi)
+    //console.log(myTokenAbi)
 
 
     console.log("load private key")
