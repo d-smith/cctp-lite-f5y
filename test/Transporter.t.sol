@@ -6,8 +6,11 @@ import "../src/Transporter.sol";
 import "../src/Token.sol";
 import {Message} from "../src/Message.sol";
 import {Utils} from "./utils/Utils.sol";
+import "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 
 contract TransportTest is Test {
+    using ECDSA for bytes32;
+
     Transporter public transporter;
     Transporter public remoteTransporter;
     MyToken public myToken;
@@ -159,7 +162,7 @@ contract TransportTest is Test {
         bytes32 digest = keccak256(message);
         
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, digest.toEthSignedMessageHash());
         bytes memory enc = abi.encodePacked(r,s,v);
 
         vm.expectRevert(Transporter.UnrecognizedAttestation.selector);
@@ -171,7 +174,7 @@ contract TransportTest is Test {
         bytes memory message  = formSentMessage(6,bob, alice, 666, localDomain, remoteDomain);
         bytes32 digest = keccak256(message);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest.toEthSignedMessageHash());
         bytes memory enc = abi.encodePacked(r,s,v);
 
         vm.expectRevert(Transporter.UnsupportedBodyVersion.selector);
@@ -184,7 +187,7 @@ contract TransportTest is Test {
             transporter.messageBodyVersion(), 12, remoteDomain);
         bytes32 digest = keccak256(message);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest.toEthSignedMessageHash());
         bytes memory enc = abi.encodePacked(r,s,v);
 
         vm.expectRevert(Transporter.UnsupportedSourceDomain.selector);
@@ -197,7 +200,7 @@ contract TransportTest is Test {
             transporter.messageBodyVersion(), localDomain, 12);
         bytes32 digest = keccak256(message);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest.toEthSignedMessageHash());
         bytes memory enc = abi.encodePacked(r,s,v);
 
         vm.expectRevert(Transporter.UnsupportedDestinationDomain.selector);
@@ -216,7 +219,7 @@ contract TransportTest is Test {
         // 0x73dA1eD554De26C467d97ADE090af6d52851745E
         // 0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b
         
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xf9832eeac47db42efeb2eca01e6479bfde00fda8fdd0624d45efd0e4b9ddcd3b, digest.toEthSignedMessageHash());
         bytes memory enc = abi.encodePacked(r,s,v);
 
         uint256 remoteBalance = remoteToken.balanceOf(bob);

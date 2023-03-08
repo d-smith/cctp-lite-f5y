@@ -47,6 +47,7 @@ contract Transporter {
     error UnsupportedSourceDomain();
     error UnsupportedDestinationDomain();
     error RequestPreviouslyProcessed();
+    error InconsistentRecipient();
 
     constructor(
         uint32 _localDomain, 
@@ -161,19 +162,19 @@ contract Transporter {
         // For this simplified version we assume one signature
         address signerAddress = digest.toEthSignedMessageHash().recover(attestation);
         //if(signerAddress != remoteAttestor) revert (toString(digest));
-        if(signerAddress != remoteAttestor) revert (string(abi.encodePacked(toString(signerAddress), " ", toString(remoteAttestor))));
+        if(signerAddress != remoteAttestor) revert UnrecognizedAttestation();
 
         //TODO - full message verification
         bytes29 _msg = message.ref(0);
-        if(Message._version(_msg) != messageBodyVersion) revert ("UnsupportedBodyVersion()");
-        if(Message._sourceDomain(_msg) != remoteDomain) revert ("UnsupportedSourceDomain()");
-        if(Message._destinationDomain(_msg) != localDomain) revert ("UnsupportedDestinationDomain()");
+        if(Message._version(_msg) != messageBodyVersion) revert UnsupportedBodyVersion();
+        if(Message._sourceDomain(_msg) != remoteDomain) revert UnsupportedSourceDomain();
+        if(Message._destinationDomain(_msg) != localDomain) revert UnsupportedDestinationDomain();
 
         // Extract the nonce and see if we have processed this before
         uint64 sendNonce = Message._nonce(_msg);
         
         XmitRec memory xmit = processedSends[sendNonce];
-        if(xmit.recipient != address(0)) revert ("RequestPreviouslyProcessed()");
+        if(xmit.recipient != address(0)) revert RequestPreviouslyProcessed();
 
         // Extract sender and recipient, include those as the context assocaited
         // with the request nonce being processed.
@@ -198,41 +199,18 @@ contract Transporter {
 
         bytes29 _burnMsg = Message._messageBody(_msg);
         uint256 amount = BurnMessage._getAmount(_burnMsg);
-        if(amount <= 0) revert ("ZeroAmount()");
+        if(amount <= 0) revert ZeroAmount();
 
         address burnMsgRecipient = Message.bytes32ToAddress(
             BurnMessage._getMintRecipient(_burnMsg)
         );
         
-        if(burnMsgRecipient == address(0)) revert("burn recipient may not be address(0)");
-        if(burnMsgRecipient != recipient) revert("recipient mismatch");
+        if(burnMsgRecipient == address(0)) revert ZeroAddressRecipient();
+        if(burnMsgRecipient != recipient) revert InconsistentRecipient();
 
         IDelegatedMinter(minter).delegateMint(recipient, amount);
 
     }
 
-    function toString(address account) public pure returns(string memory) {
-    return toString(abi.encodePacked(account));
-}
-
-function toString(uint256 value) public pure returns(string memory) {
-    return toString(abi.encodePacked(value));
-}
-
-function toString(bytes32 value) public pure returns(string memory) {
-    return toString(abi.encodePacked(value));
-}
-
-function toString(bytes memory data) public pure returns(string memory) {
-    bytes memory alphabet = "0123456789abcdef";
-
-    bytes memory str = new bytes(2 + data.length * 2);
-    str[0] = "0";
-    str[1] = "x";
-    for (uint i = 0; i < data.length; i++) {
-        str[2+i*2] = alphabet[uint(uint8(data[i] >> 4))];
-        str[3+i*2] = alphabet[uint(uint8(data[i] & 0x0f))];
-    }
-    return string(str);
-}
+    
 }
