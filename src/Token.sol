@@ -26,7 +26,7 @@ contract MyToken is ERC20Burnable, Ownable, IDelegatedMinter {
     }
 
     function delegateMint(address to, uint256 amount) public {
-        require(msg.sender == cctpMinter);
+        if(msg.sender != cctpMinter) revert("wrong sender");
         _mint(to,amount);
     }
 

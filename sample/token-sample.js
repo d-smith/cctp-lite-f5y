@@ -4,6 +4,7 @@ const transporterAbi = require('../out/Transporter.sol/Transporter.abi.json');
 const myTokenAbi = require('../out/Token.sol/MyToken.abi.json');
 
 const ethContractDeployCtx = require(process.env.ETH_DEPLOY_DETAILS);
+const mbContractDeployCtx = require(process.env.MB_DEPLOY_DETAILS);
 
 const REMOTE_DOMAIN = 2;
 
@@ -29,6 +30,15 @@ const main = async () => {
         .transactions.filter(t => t.contractName == "Transporter")
         .map(t => t.contractAddress)[0];
 
+    // Grab the moonbeam contract addresses
+    const mbTokenAddress = mbContractDeployCtx
+        .transactions.filter(t => t.contractName == "MyToken")
+        .map(t => t.contractAddress)[0];
+
+    const mbTransporterAddress = mbContractDeployCtx
+        .transactions.filter(t => t.contractName == "Transporter")
+        .map(t => t.contractAddress)[0];
+
 
 
     // Ganache account 1
@@ -47,12 +57,10 @@ const main = async () => {
     //const ethTokenAddress = "0x60236b9b0D954f52730045806c18495aF24FF295";
     const ethTokenContract = new web3.eth.Contract(myTokenAbi, ethTokenAddress, { from: ownerSigner.address });
 
-    const mbTokenAddress = "0x79885EBC79783C9174faC36Ed99cD9467CB8cDbE";
     const mbTokenContract = new web3.eth.Contract(myTokenAbi, mbTokenAddress, { from: mbSigner.address });
 
     const transporterContract = new web3.eth.Contract(transporterAbi, ethTransporterAddress, { from: ethSigner.address });
 
-    const mbTransporterAddress = "0xe9CC152481642D7a3Ea207E3930067B19663770F";
     const mbTransporterContract = new web3.eth.Contract(transporterAbi, mbTransporterAddress, { from: mbSigner.address });
 
     const initialBalance = await ethTokenContract.methods.balanceOf(ethSigner.address).call();
@@ -108,7 +116,14 @@ const main = async () => {
 
     const attestationSignature = attestationResponse.attestation;
     console.log(`Signature: ${attestationSignature}`)
+    //const decodedSig =  web3.eth.abi.decodeParameter('bytes', attestationSignature);
+    //console.log(`Decoded ${decodedSig}`);
+    const encodedSig =  web3.eth.abi.encodeParameter('bytes', attestationSignature);
+    //console.log(`Decoded ${decodedSig}`);
+    console.log(`Encoded ${encodedSig}`);
+    const encodedMessageBytes =  web3.eth.abi.encodeParameter('bytes',messageBytes);
 
+    
     web3.setProvider(process.env.MOONBEAM_LOCAL_RPC); // Connect web3 to AVAX testnet
     const receiveTxGas = await mbTransporterContract.methods.receiveMessage(messageBytes, attestationSignature).estimateGas();
     const receiveTx = await mbTransporterContract.methods.receiveMessage(messageBytes, attestationSignature).send({ gas: receiveTxGas });
@@ -117,6 +132,7 @@ const main = async () => {
 
     const remoteBalance = await mbTokenContract.methods.balanceOf(process.env.RECIPIENT_ADDRESS).call();
     console.log(`initial balance of account 1 ${remoteBalance}`);
+    
 }
 
 main();

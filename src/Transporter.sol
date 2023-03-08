@@ -30,6 +30,7 @@ contract Transporter {
     using TypedMemView for bytes29;
     using Message for bytes29;
     using BurnMessage for bytes29;
+    using ECDSA for bytes32;
 
     struct XmitRec {
         address sender;
@@ -111,6 +112,16 @@ contract Transporter {
         return true;
     }
 
+    function recover( 
+        bytes calldata message, 
+        bytes calldata attestation
+    ) external returns(address) {
+        bytes32 digest = keccak256(message);
+
+        // For this simplified version we assume one signature
+        return digest.toEthSignedMessageHash().recover(attestation);
+    }
+
     function sendDepositForBurnMessage(
         uint32 destinationDomain,
         bytes32 recipient,
@@ -148,20 +159,21 @@ contract Transporter {
         bytes32 digest = keccak256(message);
 
         // For this simplified version we assume one signature
-        address signerAddress = ECDSA.recover(digest, attestation);
-        if(signerAddress != remoteAttestor) revert UnrecognizedAttestation();
+        address signerAddress = digest.toEthSignedMessageHash().recover(attestation);
+        //if(signerAddress != remoteAttestor) revert (toString(digest));
+        if(signerAddress != remoteAttestor) revert (string(abi.encodePacked(toString(signerAddress), " ", toString(remoteAttestor))));
 
         //TODO - full message verification
         bytes29 _msg = message.ref(0);
-        if(Message._version(_msg) != messageBodyVersion) revert UnsupportedBodyVersion();
-        if(Message._sourceDomain(_msg) != remoteDomain) revert UnsupportedSourceDomain();
-        if(Message._destinationDomain(_msg) != localDomain) revert UnsupportedDestinationDomain();
+        if(Message._version(_msg) != messageBodyVersion) revert ("UnsupportedBodyVersion()");
+        if(Message._sourceDomain(_msg) != remoteDomain) revert ("UnsupportedSourceDomain()");
+        if(Message._destinationDomain(_msg) != localDomain) revert ("UnsupportedDestinationDomain()");
 
         // Extract the nonce and see if we have processed this before
         uint64 sendNonce = Message._nonce(_msg);
         
         XmitRec memory xmit = processedSends[sendNonce];
-        if(xmit.recipient != address(0)) revert RequestPreviouslyProcessed();
+        if(xmit.recipient != address(0)) revert ("RequestPreviouslyProcessed()");
 
         // Extract sender and recipient, include those as the context assocaited
         // with the request nonce being processed.
@@ -186,16 +198,41 @@ contract Transporter {
 
         bytes29 _burnMsg = Message._messageBody(_msg);
         uint256 amount = BurnMessage._getAmount(_burnMsg);
-        if(amount <= 0) revert ZeroAmount();
+        if(amount <= 0) revert ("ZeroAmount()");
 
         address burnMsgRecipient = Message.bytes32ToAddress(
             BurnMessage._getMintRecipient(_burnMsg)
         );
         
-        require(burnMsgRecipient != address(0));
-        require(burnMsgRecipient == recipient);
+        if(burnMsgRecipient == address(0)) revert("burn recipient may not be address(0)");
+        if(burnMsgRecipient != recipient) revert("recipient mismatch");
 
         IDelegatedMinter(minter).delegateMint(recipient, amount);
 
     }
+
+    function toString(address account) public pure returns(string memory) {
+    return toString(abi.encodePacked(account));
+}
+
+function toString(uint256 value) public pure returns(string memory) {
+    return toString(abi.encodePacked(value));
+}
+
+function toString(bytes32 value) public pure returns(string memory) {
+    return toString(abi.encodePacked(value));
+}
+
+function toString(bytes memory data) public pure returns(string memory) {
+    bytes memory alphabet = "0123456789abcdef";
+
+    bytes memory str = new bytes(2 + data.length * 2);
+    str[0] = "0";
+    str[1] = "x";
+    for (uint i = 0; i < data.length; i++) {
+        str[2+i*2] = alphabet[uint(uint8(data[i] >> 4))];
+        str[3+i*2] = alphabet[uint(uint8(data[i] & 0x0f))];
+    }
+    return string(str);
+}
 }
