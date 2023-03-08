@@ -26,8 +26,26 @@ docker run --rm --name moonbeam_development -p 9944:9944 -p 9933:9933 purestake/
 
 . .envlocalmb
 forge script script/deploy.s.sol:DeployScript --broadcast --rpc-url http://127.0.0.1:9933 --legacy --extra-output-files abi
-
 ```
+
+## End to End Scenario
+
+This section describes how to set up a test scenario to burn tokens on ethereum and mint tokens on
+moonbeam.
+
+### Set Up
+
+1. Deploy to both Ethereum and Moonbeam local dev environments as described above. Note that the contract abis
+must be generated as part of the deploy as the demo script reads contract addresses from run-latest.json 
+under the broadcast/deploy.s.output output for each chain.
+2. Deploy the attestor infrastructure stack from [this project](https://github.com/d-smith/attester), noting the dependencies:
+    * contract address
+    * signing key from account 10 (ethereum)
+3. Note the attestorApi endpoint from the attestor stack output, set an ENDPOINT env variable equal to that, e.g. 
+`export ENDPOINT=https://6xac0825ak.execute-api.us-east-1.amazonaws.com/prod`
+4. In the samples directory, set the samples enviroment: `. .env`
+5. Run the sample to see tokens burned on ethereum and minted on moonbeam - `node token-sample.js`
+
 ## CLI Interaction
 
 For exercising the CLI I ran a ganache node bootstrapped with a consistent test seed phrase to allow me to rely on specific address and key values captured in the 
@@ -57,16 +75,3 @@ cast send $TRANSPORTER "depositForBurn(uint256,uint32,bytes32,address)" --privat
 Prefunded moonbeam dev accounts - see [here](https://docs.moonbeam.network/builders/get-started/networks/moonbeam-dev/#pre-funded-development-accounts)
 
 
-## End to End Scenario
-
-This section describes how to set up a test scenario to burn tokens on ethereum and mint tokens on
-moonbeam.
-
-### Set Up
-
-1. Deploy to both Ethereum and Moonbeam local dev environments as described above. Note that the contract abis
-must be generated as part of the deploy as the demo script reads contract addresses from run-latest.json 
-under the broadcast/deploy.s.output output for each chain.
-2. Deploy the attestor infrastructure stack from [this project](https://github.com/d-smith/attester), noting the dependencies:
-    * contract address
-    * signing key from account 10 (eth)
