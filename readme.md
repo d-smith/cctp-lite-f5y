@@ -35,6 +35,8 @@ moonbeam.
 
 ### Set Up
 
+0. Generate the abi files by issuing a `forge clean` then a `forge compile --extra-output-files abi` in the 
+top level directory of this project.
 1. Deploy to both Ethereum and Moonbeam local dev environments as described above. Note that the contract abis
 must be generated as part of the deploy as the demo script reads contract addresses from run-latest.json 
 under the broadcast/deploy.s.output output for each chain.
