@@ -1,0 +1,24 @@
+export ETH_TESTNET_RPC=http://127.0.0.1:8545
+export MOONBEAM_LOCAL_RPC=http://127.0.0.1:9545
+
+# Account 1 from OP set up
+export ETH_PRIVATE_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+
+# Moonbeam Faith test account 
+export RECIPIENT_ADDRESS=0xC0F0f4ab324C46e55D02D0033343B4Be8A55532d
+export RECIPIENT_ADDRESS_BYTES32=0x000000000000000000000000c0f0f4ab324c46e55d02d0033343b4be8a55532d
+export RECIPIENT_PRIVATE_KEY=0xb9d2ea9a615f3165812e8d44de0d24da9bbd164b65c4f0573e1ce2c8dbd9c8df
+
+# OP account 0 deployer
+export DEPLOYER_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+export MB_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+# L1 - 17
+export ETH_DEPLOY_DETAILS="../broadcast/deploy.s.sol/17/run-latest.json"
+
+# L2 - 31337
+export MB_DEPLOY_DETAILS="../broadcast/deploy.s.sol/31337/run-latest.json"
+
+## Or the above switcheroo
+export MB_DEPLOY_DETAILS="../broadcast/deploy.s.sol/17/run-latest.json"
+export ETH_DEPLOY_DETAILS="../broadcast/deploy.s.sol/31337/run-latest.json"

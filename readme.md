@@ -77,3 +77,20 @@ cast send $TRANSPORTER "depositForBurn(uint256,uint32,bytes32,address)" --privat
 Prefunded moonbeam dev accounts - see [here](https://docs.moonbeam.network/builders/get-started/networks/moonbeam-dev/#pre-funded-development-accounts)
 
 
+## Transport between ETH and OP via CCTP
+
+Just for grins, should see about native bridging too.
+
+* Use .envL1 and .envL2
+* Assume the same signer
+
+
+```
+. .envL1
+forge script script/deploy.s.sol:DeployScript --broadcast --rpc-url http://127.0.0.1:8545 --extra-output-files abi --legacy --slow
+
+. .envL2
+forge script script/deploy.s.sol:DeployScript --broadcast --rpc-url http://127.0.0.1:9545 --extra-output-files abi --legacy --slow
+```
+
+
