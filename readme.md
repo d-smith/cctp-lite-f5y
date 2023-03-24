@@ -4,11 +4,11 @@ Simplified version of CCTP as an illustration of the rough workings of the proto
 
 ## Deploy
 
-To run a local ethereum node wit the preseeded accounts used for the sample, first do a [global install of ganache](https://www.npmjs.com/package/ganache), then in a dedicated shell:
+To run a local ethereum node with the preseeded accounts used for the sample, start a node using the provided anvil script:
 
 ```
-cd ganache
-npm run ganache
+cd anvil
+./start-anvil.sh
 ```
 
 Then, to install to local eth:
